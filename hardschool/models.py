@@ -1,30 +1,28 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 
 class Teacher(models.Model):
     """
     Модель учителя:
-    first_name: имя
-    last_name: фамилия
+    user: связываем учителя с моделью юзера
     """
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.first_name} {self.last_name}'
+        return self.user.get_full_name()
+
 
 
 class Student(models.Model):
     """
     Модель студента:
-    first_name: имя
-    last_name: фамилия
+    user: связываем студента с моделью юзера
     """
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.first_name} {self.last_name}'
+        return self.user.get_full_name()
 
 
 class Product(models.Model):
@@ -34,18 +32,22 @@ class Product(models.Model):
     title: наименование продукта
     start_date_time: дата начала продукта
     price: цена продукта
-    max_students: максимум студентов в продукте
-    min_students: минимум студентов в продукте
+    max_min_students: максимум и минимум студентов в продукте
     """
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     start_date_time = models.DateTimeField()
     price = models.IntegerField()
-    max_students = models.IntegerField()
-    min_students = models.IntegerField()
+    max_students = models.PositiveIntegerField(default=10)
+    min_students = models.PositiveIntegerField(default=2)
 
     def __str__(self):
         return self.title
+
+
+class UserProductAccess(models.Model):
+    user = models.ForeignKey(Student, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
 
 class Lesson(models.Model):
@@ -76,4 +78,3 @@ class Group(models.Model):
 
     def __str__(self):
         return self.title
-
