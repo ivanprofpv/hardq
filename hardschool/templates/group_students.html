@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Детали продукта</title>
+</head>
+<body>
+    <h1>{{ product.title }}</h1>
+
+    <h2>Группы:</h2>
+    <ul>
+        {% for group in groups %}
+            <li>{{ group.title }} ({{ group.students.count }} студентов)</li>
+        {% empty %}
+            <li>Нет доступных групп</li>
+        {% endfor %}
+    </ul>
+</body>
+
+</html>

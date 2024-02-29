@@ -1,65 +1,77 @@
-from django.http import HttpResponse
-from django.db import transaction
+from datetime import datetime
 
-from hardschool.models import Student, Product, Group
+from django.shortcuts import render
+from pytz import timezone
+
+from hardschool.models import Student, Group, UserProductAccess, Product
 
 
-@transaction.atomic
-def distribute_students_to_groups():
-    # Получаем список всех групп
-    groups = Group.objects.all()
+def sort_students_to_groups(students, groups, start_date_time):
+    """
+    Функция сортировки студентов по группам
+    :param start_date_time: время старта в продукте
+    :param students: студенты
+    :param groups: группы
+    """
+    # Создаем копию списка студентов
+    students = list(students)
+    # Создаем копию списка групп
+    groups = list(groups)
 
-    # Получаем список всех продуктов
-    products = Product.objects.all()
+    current_time = datetime.now(timezone('Europe/Moscow')) # Надо сравнивать таймзону, иначе ошибка
 
-    return groups, products
-
-    # for product in products:
-    #     # Получаем список групп для текущего продукта
-    #     product_groups = groups.filter(product=product).order_by('students__count')
-    #
-    #     # Распределение студентов по группам
-    #     students = Student.objects.all()
-    #     num_students = students.count()
-    #
-    #     # Проверка, достаточно ли студентов для формирования групп
-    #     if num_students >= product.min_students:
-    #         # Распределяем студентов по группам
-    #         num_groups = product_groups.count()
-    #         min_students_per_group = product.min_students
-    #         max_students_per_group = product.max_students
-    #
-    #         # Вычисляем количество студентов в каждой группе
-    #         if num_students <= max_students_per_group * num_groups:
-    #             students_per_group = num_students // num_groups
-    #             remainder = num_students % num_groups
-    #         else:
-    #             students_per_group = max_students_per_group
-    #             remainder = num_students - max_students_per_group * num_groups
-    #
-    #         for i, group in enumerate(product_groups):
-    #             if i < remainder:
-    #                 group.students.set(students[:students_per_group + 1])
-    #                 students = students[students_per_group + 1:]
-    #             else:
-    #                 group.students.set(students[:students_per_group])
-    #                 students = students[students_per_group:]
-    #
-    # # Сохраняем изменения в базе данных
-    # groups.save()
-    #
-    # return groups
-
-def index(request):
-    groups = Group.objects.all()
-
-    # Получаем список всех продуктов
-    products = Product.objects.all()
+    if current_time >= start_date_time:
+        print("Сортировку студентов можно выполнять только до указанного времени.")
+        return
 
     for group in groups:
-        print(group)
+        if students:
+            free_places = group.product.max_students - group.students.count()
 
-    for product in products:
-        print(product)
-    # Возвращение ответа представления
-    return groups, products
+            # Проверяем, что время начала продукта еще не наступило
+            if group.product.start_date_time > current_time:
+
+                # Проверяем, что свободных мест больше или столько же, как указано в мин.мест в продукте
+                if free_places >= group.product.min_students:
+
+                    # Добавляем студентов в группу, пока есть свободные места и есть студенты
+                    while free_places > 0 and students:
+                        student = students.pop(0)  # Берем первого студента из оставшихся
+
+                        # Проверяем доступ студента к продукту
+                        if has_access(student, group.product):
+                            group.students.add(student) # И добавляем в группу
+                            free_places -= 1
+
+        else:
+            break  # Все студенты распределены, выходим из цикла
+
+
+def has_access(student, product):
+    """
+    Функция проверки доступа студента к продукту
+    :param student: студент
+    :param product: продукт
+    :return: True, если у студента есть доступ к продукту, иначе False
+    """
+    return UserProductAccess.objects.filter(user=student, product=product).exists()
+
+
+def group_students(request):
+    """
+    Функция для вызова функции сортировки
+    :param request:
+    :return:
+    """
+    students = Student.objects.all()
+    groups = Group.objects.all()
+    start_date_time = Product.objects.first().start_date_time
+
+    # Вызываем функцию sort_students_to_groups для сортировки студентов по группам
+    sort_students_to_groups(students, groups, start_date_time)
+
+    context = {
+        'groups': groups
+    }
+
+    return render(request, 'group_students.html', context)
