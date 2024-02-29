@@ -2,6 +2,11 @@ from django.db import models
 
 
 class Teacher(models.Model):
+    """
+    Модель учителя:
+    first_name: имя
+    last_name: фамилия
+    """
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
 
@@ -10,6 +15,11 @@ class Teacher(models.Model):
 
 
 class Student(models.Model):
+    """
+    Модель студента:
+    first_name: имя
+    last_name: фамилия
+    """
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
 
@@ -18,6 +28,15 @@ class Student(models.Model):
 
 
 class Product(models.Model):
+    """
+    Модель продукта:
+    teacher: ключ на создателя (учителя) (многие к одному)
+    title: наименование продукта
+    start_date_time: дата начала продукта
+    price: цена продукта
+    max_students: максимум студентов в продукте
+    min_students: минимум студентов в продукте
+    """
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     start_date_time = models.DateTimeField()
@@ -30,6 +49,12 @@ class Product(models.Model):
 
 
 class Lesson(models.Model):
+    """
+    Модель урока:
+    product: ключ на продукт (многие к одному)
+    title: наименование урока
+    url: строка для ввода ссылки на видео
+    """
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     url = models.CharField(max_length=150)
@@ -39,6 +64,12 @@ class Lesson(models.Model):
 
 
 class Group(models.Model):
+    """
+    Модель группы:
+    students: ключ на студентов (многие ко многим)
+    product: ключ на продукт (многие к одному)
+    title: наименование группы
+    """
     students = models.ManyToManyField(Student)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
