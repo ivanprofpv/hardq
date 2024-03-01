@@ -47,11 +47,14 @@ class ProductViewSet(viewsets.ModelViewSet):
 
 
 class LessonViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API эндпоинт для получения списка уроков у студента по конкретному продукту
+    """
     serializer_class = LessonSerializer
 
     def get_queryset(self):
         # Получаем идентификатор пользователя из параметров запроса
-        # К примеру http://127.0.0.1:8000/lessons/?user_id=1
+        # К примеру http://127.0.0.1:8000/api/lessons/?user_id=1
         user_id = self.request.query_params.get('user_id')
 
         if user_id:
@@ -83,6 +86,9 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class AverageNumberInPercentageAPIView(APIView):
+    """
+    API эндпоинт для получения средней заполненности групп
+    """
     def get(self, request):
         # Используем агрегацию через Avg для получения среднего значения заполненности групп
         # Считаем через поле students в Group, а оно уже ведет к Student, которое связано с User
