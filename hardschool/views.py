@@ -1,12 +1,16 @@
 from datetime import datetime
 
+from django.contrib.auth.models import User
+from django.http import Http404
+
 from django.db.models import Count
 from django.shortcuts import render
 from pytz import timezone
 from rest_framework import viewsets, permissions
+from rest_framework.response import Response
 
 from hardschool.models import Student, Group, UserProductAccess, Product, Lesson, Teacher
-from hardschool.serializers import ProductSerializer, TeacherSerializer
+from hardschool.serializers import ProductSerializer, TeacherSerializer, LessonSerializer
 
 
 class TeacherViewSet(viewsets.ModelViewSet):
@@ -36,6 +40,45 @@ class ProductViewSet(viewsets.ModelViewSet):
                                               .annotate(lessons_in_product=Count('lesson'))
                                               .values('lessons_in_product'))
         return response
+
+
+class LessonViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = LessonSerializer
+
+    def get_queryset(self):
+        # Получаем идентификатор пользователя из параметров запроса
+        # К примеру http://127.0.0.1:8000/lessons/?user_id=1
+        user_id = self.request.query_params.get('user_id')
+
+        if user_id:
+            # Получаем экземпляр Student на основе указанного идентификатора
+            student = Student.objects.get(id=user_id)
+
+            # Получаем все объекты UserProductAccess, связанные с пользователем
+            user_product_accesses = UserProductAccess.objects.filter(user=student)
+
+            # Получаем список доступных продуктов
+            products = [user_product_access.product for user_product_access in user_product_accesses]
+
+            # Получаем все уроки, связанные с доступными продуктами
+            queryset = Lesson.objects.filter(product__in=products)
+
+            return queryset
+        else:
+            return Lesson.objects.none()
+
+    def list(self, request, *args, **kwargs):
+        # Получаем исходник из get_queryset
+        queryset = self.filter_queryset(self.get_queryset())
+        # Проверяем наличие уроков, не пусто ли там
+        if not queryset.exists():
+            # Если все таки по id пользователя пусто, возвращаем сообщение:
+            return Response({"message": "У этого ученика нет уроков"})
+        else:
+            # Создаем инстанс сериалайзера и передаем список queryset с полученными уроками
+            serializer = self.get_serializer(queryset, many=True)
+            # И отправляем данные
+            return Response(serializer.data)
 
 
 def sort_students_to_groups(students, groups, start_date_time):

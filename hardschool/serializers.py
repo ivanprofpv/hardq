@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from hardschool.models import Product, Teacher
+from hardschool.models import Product, Teacher, Lesson
+
 
 # Класс указан, так как является ключом Продукта
 class TeacherSerializer(serializers.HyperlinkedModelSerializer):
@@ -23,4 +24,10 @@ class ProductSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['teacher', 'title', 'start_date_time', 'price',
                   'max_students', 'min_students', 'lessons_in_product']
 
+
+class LessonSerializer(serializers.HyperlinkedModelSerializer):
+    product_title = serializers.ReadOnlyField(source='product.title')
+    class Meta:
+        model = Lesson
+        fields = ['product', 'product_title', "title"]
 
