@@ -1,9 +1,41 @@
 from datetime import datetime
 
+from django.db.models import Count
 from django.shortcuts import render
 from pytz import timezone
+from rest_framework import viewsets, permissions
 
-from hardschool.models import Student, Group, UserProductAccess, Product
+from hardschool.models import Student, Group, UserProductAccess, Product, Lesson, Teacher
+from hardschool.serializers import ProductSerializer, TeacherSerializer
+
+
+class TeacherViewSet(viewsets.ModelViewSet):
+    """
+    API эндпоинт получения списка учителей
+    """
+    queryset = Teacher.objects.all()
+    serializer_class = TeacherSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class ProductViewSet(viewsets.ModelViewSet):
+    """
+    API эндпоинт для получения количества продуктов с количеством уроков
+    """
+    queryset = Product.objects.all()
+    # Упорядочиваем по идентификатору, так как это необходимо для пагинации
+    queryset = queryset.order_by('id')
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        # Получаем базовый запрос
+        response = super().list(request, *args, **kwargs)
+        # Аннотируем строку количества уроков в ответ
+        response.data['count_lessons'] = (self.get_queryset()
+                                              .annotate(lessons_in_product=Count('lesson'))
+                                              .values('lessons_in_product'))
+        return response
 
 
 def sort_students_to_groups(students, groups, start_date_time):
