@@ -27,7 +27,7 @@
 - `pip install djangorestframework`
 - `pip install pytz`
 
-## Установка:
+## Доступ в админку:
 - аккаунт админа:
 `Admin`
 `1234`
