@@ -37,8 +37,14 @@ class ProductViewSet(viewsets.ModelViewSet):
         response = super().list(request, *args, **kwargs)
         # Аннотируем строку количества уроков в ответ
         response.data['count_lessons'] = (self.get_queryset()
-                                              .annotate(lessons_in_product=Count('lesson'))
-                                              .values('lessons_in_product'))
+                                          .annotate(lessons_in_product=Count('lesson'))
+                                          .values('lessons_in_product'))
+
+        # Аннотируем количество студентов с доступом к каждому продукту
+        response.data['students_in_product'] = (self.get_queryset()
+                                                .annotate(students_in_product=Count('userproductaccess'))
+                                                .values('students_in_product'))
+
         return response
 
 
@@ -93,7 +99,7 @@ def sort_students_to_groups(students, groups, start_date_time):
     # Создаем копию списка групп
     groups = list(groups)
 
-    current_time = datetime.now(timezone('Europe/Moscow')) # Надо сравнивать таймзону, иначе ошибка
+    current_time = datetime.now(timezone('Europe/Moscow'))  # Надо сравнивать таймзону, иначе ошибка
 
     if current_time >= start_date_time:
         print("Сортировку студентов можно выполнять только до указанного времени.")
@@ -115,7 +121,7 @@ def sort_students_to_groups(students, groups, start_date_time):
 
                         # Проверяем доступ студента к продукту
                         if has_access(student, group.product):
-                            group.students.add(student) # И добавляем в группу
+                            group.students.add(student)  # И добавляем в группу
                             free_places -= 1
 
         else:
