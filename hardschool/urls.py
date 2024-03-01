@@ -13,6 +13,7 @@ urlpatterns = [
     path('re/', group_students, name='rebuild'),
     path('api/', include('rest_framework.urls', namespace='rest_framework')),
     path('lessons/<int:user_id>/', views.LessonViewSet.as_view({'get': 'list'}), name='lesson-list'),
+    path('api/average_number_in_percentage/', AverageNumberInPercentageAPIView.as_view(), name='group-fill-percentage'),
 ]
 
 urlpatterns += router.urls

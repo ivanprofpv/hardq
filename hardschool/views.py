@@ -1,13 +1,11 @@
 from datetime import datetime
 
-from django.contrib.auth.models import User
-from django.http import Http404
-
-from django.db.models import Count
+from django.db.models import Count, Avg
 from django.shortcuts import render
 from pytz import timezone
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from hardschool.models import Student, Group, UserProductAccess, Product, Lesson, Teacher
 from hardschool.serializers import ProductSerializer, TeacherSerializer, LessonSerializer
@@ -59,13 +57,10 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
         if user_id:
             # Получаем экземпляр Student на основе указанного идентификатора
             student = Student.objects.get(id=user_id)
-
             # Получаем все объекты UserProductAccess, связанные с пользователем
             user_product_accesses = UserProductAccess.objects.filter(user=student)
-
             # Получаем список доступных продуктов
             products = [user_product_access.product for user_product_access in user_product_accesses]
-
             # Получаем все уроки, связанные с доступными продуктами
             queryset = Lesson.objects.filter(product__in=products)
 
@@ -85,6 +80,18 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
             serializer = self.get_serializer(queryset, many=True)
             # И отправляем данные
             return Response(serializer.data)
+
+
+class AverageNumberInPercentageAPIView(APIView):
+    def get(self, request):
+        # Используем агрегацию через Avg для получения среднего значения заполненности групп
+        # Считаем через поле students в Group, а оно уже ведет к Student, которое связано с User
+        fill_percentage = Group.objects.aggregate(average_number_in_percentage=Avg('students__user'))
+        # Обращаемся к ключу average_number_in_percentage словаря fill_percentage и округляем
+        average_percentage = round(fill_percentage['average_number_in_percentage'], 1)
+        formatted_percentage = f"{average_percentage}%"
+
+        return Response({'average_number_in_percentage': formatted_percentage})
 
 
 def sort_students_to_groups(students, groups, start_date_time):
