@@ -21,3 +21,8 @@
 - python '3.10.9';
 - django '5.0.2';
 - BD: litesql.
+
+## Установка:
+- `pip install django`
+- `pip install djangorestframework`
+- `pip install pytz`
